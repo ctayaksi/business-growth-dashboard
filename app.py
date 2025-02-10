@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score
 st.set_page_config(page_title="Business Growth Recommender", layout="wide")
 
 # ---------------------- FILE UPLOADER ----------------------
+
 def load_data():
     uploaded_file = st.file_uploader("Upload your dataset (Excel format)", type=["xlsx"])
     if uploaded_file is not None:
@@ -22,12 +23,12 @@ def load_data():
         practice_columns = [col for col in practice_columns if df[col].nunique() > 1]
         df[practice_columns] = df[practice_columns].fillna(0).astype(int)
         return df, practice_columns
-    else:
-        return None, None
+    return None, None
 
 df, practice_columns = load_data()
 
 # ---------------------- MODEL TRAINING FUNCTION ----------------------
+
 def train_model(df, practice_columns):
     if df is not None and practice_columns:
         X = df[practice_columns]
@@ -44,6 +45,7 @@ def train_model(df, practice_columns):
 rf_model, accuracy, feature_importance = train_model(df, practice_columns)
 
 # ---------------------- SIDEBAR NAVIGATION ----------------------
+
 st.sidebar.title("Navigation")
 page = st.sidebar.radio("Go to:", ["Home", "Model Training", "User Assessment", "Results & Recommendations"])
 
@@ -77,13 +79,15 @@ elif page == "User Assessment":
         user_input = {}
         for practice in feature_importance['Practice'].head(10):
             user_input[practice] = st.radio(f"Are you using {practice}?", ('No', 'Yes'))
+        st.session_state['user_input'] = user_input
         st.success("Responses recorded! Navigate to Results & Recommendations.")
     else:
         st.warning("Please train the model first.")
 
 elif page == "Results & Recommendations":
     st.title("📈 Results & Recommendations")
-    if rf_model is not None:
+    if rf_model is not None and 'user_input' in st.session_state:
+        user_input = st.session_state['user_input']
         user_df = pd.DataFrame([{p: 1 if user_input.get(p, 'No') == 'Yes' else 0 for p in practice_columns}])
         growth_probability = rf_model.predict_proba(user_df)[0][1] * 100
         not_adapted = [practice for practice, value in user_input.items() if value == 'No']
